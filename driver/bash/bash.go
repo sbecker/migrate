@@ -2,8 +2,8 @@
 package bash
 
 import (
-	"github.com/mattes/migrate/driver"
-	"github.com/mattes/migrate/file"
+	"github.com/sbecker/migrate/driver"
+	"github.com/sbecker/migrate/file"
 )
 
 type Driver struct {

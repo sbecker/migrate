@@ -19,13 +19,14 @@ import (
 
 // Up applies all available migrations
 func Up(pipe chan interface{}, url, migrationsPath string) {
-	d, files, version, err := initDriverAndReadMigrationFilesAndGetVersion(url, migrationsPath)
+	d, files, migratedVersions, err := initDriverAndReadMigrationFilesAndGetMigratedVersions(url, migrationsPath)
 	if err != nil {
 		go pipep.Close(pipe, err)
 		return
 	}
 
-	applyMigrationFiles, err := files.ToLastFrom(version)
+	applyMigrationFiles, err := files.GetUnmigrated(migratedVersions)
+
 	if err != nil {
 		if err2 := d.Close(); err2 != nil {
 			pipe <- err2
@@ -279,6 +280,29 @@ func initDriverAndReadMigrationFilesAndGetVersion(url, migrationsPath string) (d
 		return nil, nil, 0, err
 	}
 	return d, &files, version, nil
+}
+
+// initDriverAndReadMigrationFilesAndGetMigratedVersions is a small helper
+// function that is very similar to initDriverAndReadMigrationFilesAndGetVersion
+// except it gets ALL applied versions from the database
+func initDriverAndReadMigrationFilesAndGetMigratedVersions(url, migrationsPath string) (driver.Driver, *file.MigrationFiles, []uint64, error) {
+	emptyVersions := make([]uint64, 0)
+
+	d, err := driver.New(url)
+	if err != nil {
+		return nil, nil, emptyVersions, err
+	}
+	files, err := file.ReadMigrationFiles(migrationsPath, file.FilenameRegex(d.FilenameExtension()))
+	if err != nil {
+		d.Close() // TODO what happens with errors from this func?
+		return nil, nil, emptyVersions, err
+	}
+	migratedVersions, err := d.MigratedVersions()
+	if err != nil {
+		d.Close() // TODO what happens with errors from this func?
+		return nil, nil, emptyVersions, err
+	}
+	return d, &files, migratedVersions, nil
 }
 
 // NewPipe is a convenience function for pipe.New().

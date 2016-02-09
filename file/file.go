@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/mattes/migrate/migrate/direction"
 	"go/token"
 	"io/ioutil"
 	"path"
@@ -13,6 +12,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/mattes/migrate/migrate/direction"
 )
 
 var filenameRegex = `^([0-9]+)_(.*)\.(up|down)\.%s$`
@@ -95,6 +96,22 @@ func (mf *MigrationFiles) ToLastFrom(version uint64) (Files, error) {
 	files := make(Files, 0)
 	for _, migrationFile := range *mf {
 		if migrationFile.Version > version && migrationFile.UpFile != nil {
+			files = append(files, *migrationFile.UpFile)
+		}
+	}
+	return files, nil
+}
+
+func (mf *MigrationFiles) GetUnmigrated(versions []uint64) (Files, error) {
+	versionsMap := make(map[uint64]bool)
+	for _, v := range versions {
+		versionsMap[v] = true
+	}
+
+	sort.Sort(mf)
+	files := make(Files, 0)
+	for _, migrationFile := range *mf {
+		if _, ok := versionsMap[migrationFile.Version]; !ok && migrationFile.UpFile != nil {
 			files = append(files, *migrationFile.UpFile)
 		}
 	}

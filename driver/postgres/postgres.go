@@ -122,6 +122,35 @@ func (driver *Driver) Version() (uint64, error) {
 	}
 }
 
+func (driver *Driver) MigratedVersions() ([]uint64, error) {
+	versions := make([]uint64, 0)
+
+	rows, err := driver.db.Query("SELECT version FROM " + tableName + " ORDER BY version ASC")
+	if err == sql.ErrNoRows {
+		return versions, nil
+	}
+	if err != nil {
+		return versions, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var version uint64
+		err := rows.Scan(&version)
+		if err != nil {
+			return versions, err
+		}
+
+		versions = append(versions, version)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return versions, err
+	}
+	return versions, nil
+}
+
 func init() {
 	driver.RegisterDriver("postgres", &Driver{})
 }

@@ -31,6 +31,11 @@ func (driver *Driver) Version() (uint64, error) {
 	return uint64(0), nil
 }
 
+func (driver *Driver) MigratedVersions() ([]uint64, error) {
+	emptyVersions := make([]uint64, 0)
+	return emptyVersions, nil
+}
+
 func init() {
 	driver.RegisterDriver("bash", &Driver{})
 }
